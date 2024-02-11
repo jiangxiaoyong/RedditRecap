@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	client := &http.Client{}
 
 	http.HandleFunc("/reddit", func(w http.ResponseWriter, r *http.Request) {
 		// Parse the query parameters from the request URL
@@ -17,21 +18,21 @@ func main() {
 		query := queryParams.Get("query")
 		fmt.Println("user query:", query)
 
-		searchList, err := reddit.Search(query, query, "relevance", "5")
+		searchList, err := reddit.Search(client, query, query, "relevance", "5")
 		if err != nil || searchList == nil || len(searchList) == 0 {
 			fmt.Fprintf(w, "please try again %+v", err.Error())
 			return
 		}
 		topic := searchList[0]
 
-		comments, err := reddit.Comments(topic.SubredditNamePrefixed, topic.ID)
+		comments, err := reddit.Comments(client, topic.SubredditNamePrefixed, topic.ID)
 		if err != nil || comments == nil {
 			fmt.Fprintf(w, "please try again %+v", err.Error())
 			return
 		}
 
 		prompt := llm.Prompt(topic, comments)
-		res := llm.Inquiry(prompt)
+		res := llm.Inquiry(client, prompt)
 		text := llm.ProcessResponse(res)
 		fmt.Println("\n\n", text)
 

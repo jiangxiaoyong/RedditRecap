@@ -8,15 +8,16 @@ import (
 	"net/http"
 	"os"
 	"redditRecap/definition"
+	"redditRecap/retry"
 )
 
 const (
 	apiEndpoint = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
 )
 
-func Inquiry(text string) string {
-	bardEndpoint := apiEndpoint + "?key=" + os.Getenv("BARD_API_KEY")
-	fmt.Printf("bar endpoint = %v\n", bardEndpoint)
+func Inquiry(client *http.Client, text string) string {
+	geminiEndpoint := apiEndpoint + "?key=" + os.Getenv("BARD_API_KEY")
+	fmt.Printf("gemini endpoint = %v\n", geminiEndpoint)
 
 	payload := definition.Payload{
 		// {"contents":[{"parts":[{"text": "hello"}]}]}
@@ -31,7 +32,9 @@ func Inquiry(text string) string {
 	reqBody, err := json.Marshal(payload)
 	//fmt.Printf("json = %v\n", string(reqBody))
 
-	resp, err := http.Post(bardEndpoint, "application/json", bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("POST", geminiEndpoint, bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := retry.HttpRetry(client, req)
 	if err != nil {
 		fmt.Println("Error making HTTP POST request:", err)
 		return ""

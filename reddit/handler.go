@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"redditRecap/retry"
 )
 
 type SearchResult struct {
@@ -18,7 +19,7 @@ type SearchResult struct {
 	UPS                   int    `json:"ups,omitempty"`
 }
 
-func Search(query, subreddit, sortType, limit string) ([]SearchResult, error) {
+func Search(client *http.Client, query, subreddit, sortType, limit string) ([]SearchResult, error) {
 	baseURL := fmt.Sprintf("https://www.reddit.com/r/%s/search.json", subreddit)
 	params := url.Values{}
 	params.Add("q", query)
@@ -27,9 +28,10 @@ func Search(query, subreddit, sortType, limit string) ([]SearchResult, error) {
 
 	// Construct the URL with query parameters
 	fullURL := fmt.Sprintf("%s?%s", baseURL, params.Encode())
-	fmt.Println("url:", fullURL)
+	fmt.Println("search endpoint:", fullURL)
 
-	resp, err := http.Get(fullURL)
+	req, err := http.NewRequest("GET", fullURL, nil)
+	resp, err := retry.HttpRetry(client, req)
 	if err != nil {
 		fmt.Println("Error making search request:", err)
 		return nil, errors.New("error making search request")
@@ -106,11 +108,12 @@ type Comment struct {
 	ReplyList []Comment
 }
 
-func Comments(subreddit, articleID string) ([]Comment, error) {
-	baseURL := fmt.Sprintf("https://www.reddit.com/%s/comments/%s.json", subreddit, articleID)
+func Comments(client *http.Client, subreddit, articleID string) ([]Comment, error) {
+	endpoint := fmt.Sprintf("https://www.reddit.com/%s/comments/%s.json", subreddit, articleID)
+	fmt.Println("comments endpoint:", endpoint)
 
-	// Make a GET request to the Reddit API
-	resp, err := http.Get(baseURL)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	resp, err := retry.HttpRetry(client, req)
 	if err != nil {
 		fmt.Println("Error making comments request:", err)
 		return nil, errors.New("error making comments request")
