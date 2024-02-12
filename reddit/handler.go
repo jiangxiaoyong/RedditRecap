@@ -1,4 +1,4 @@
-package reddit
+package main
 
 import (
 	"encoding/json"
@@ -6,21 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"redditRecap/definition"
 	"redditRecap/retry"
 	"sort"
 )
 
-type SearchResult struct {
-	Title                 string `json:"title,omitempty"`
-	ID                    string `json:"id,omitempty"`
-	Name                  string `json:"name,omitempty"`
-	Author                string `json:"author,omitempty"`
-	SelfText              string `json:"selftext,omitempty"`
-	SubredditNamePrefixed string `json:"subreddit_name_prefixed,omitempty"`
-	UPS                   int    `json:"ups,omitempty"`
-}
-
-func Search(client *http.Client, query, subreddit, sortType, limit string) ([]SearchResult, error) {
+func Search(client *http.Client, query, subreddit, sortType, limit string) ([]definition.SearchResult, error) {
 	baseURL := fmt.Sprintf("https://www.reddit.com/search.json")
 	params := url.Values{}
 	params.Add("q", query)
@@ -63,7 +54,7 @@ func Search(client *http.Client, query, subreddit, sortType, limit string) ([]Se
 	}
 
 	// Decode the JSON response
-	var searchResults []SearchResult
+	var searchResults []definition.SearchResult
 	for _, child := range children {
 		post, ok := child.(map[string]interface{})
 		if !ok {
@@ -83,7 +74,7 @@ func Search(client *http.Client, query, subreddit, sortType, limit string) ([]Se
 			continue
 		}
 
-		var searchResult SearchResult
+		var searchResult definition.SearchResult
 		bytes, _ := json.Marshal(postData)
 		err := json.Unmarshal(bytes, &searchResult)
 		if err != nil {
@@ -100,16 +91,7 @@ func Search(client *http.Client, query, subreddit, sortType, limit string) ([]Se
 	return searchResults, nil
 }
 
-type Comment struct {
-	Author    string `json:"author,omitempty"`
-	ID        string `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Body      string `json:"body,omitempty"`
-	ParentID  string `json:"parent_id,omitempty"`
-	ReplyList []Comment
-}
-
-func Comments(client *http.Client, subreddit, articleID string) ([]Comment, error) {
+func Comments(client *http.Client, subreddit, articleID string) ([]definition.Comment, error) {
 	endpoint := fmt.Sprintf("https://www.reddit.com/%s/comments/%s.json", subreddit, articleID)
 	fmt.Println("comments endpoint:", endpoint)
 
@@ -133,18 +115,18 @@ func Comments(client *http.Client, subreddit, articleID string) ([]Comment, erro
 		return nil, errors.New("error decoding comments JSON")
 	}
 
-	var commentList []Comment
+	var commentList []definition.Comment
 	for _, comment := range comments[1].(map[string]interface{})["data"].(map[string]interface{})["children"].([]interface{}) {
 		commentData := comment.(map[string]interface{})["data"].(map[string]interface{})
 		bytes, _ := json.Marshal(commentData)
-		var comment Comment
+		var comment definition.Comment
 		err := json.Unmarshal(bytes, &comment)
 		if err != nil {
 			fmt.Println("Failed to decode comment")
 			return nil, errors.New("failed to decode comment")
 		}
 
-		var replyList []Comment
+		var replyList []definition.Comment
 		if replies, ok := commentData["replies"]; ok && replies != "" {
 			replies := commentData["replies"].(map[string]interface{})
 			if _, ok := replies["data"]; ok {
@@ -152,7 +134,7 @@ func Comments(client *http.Client, subreddit, articleID string) ([]Comment, erro
 				for _, child := range children {
 					replyData := child.(map[string]interface{})["data"]
 					bytes, _ := json.Marshal(replyData)
-					var reply Comment
+					var reply definition.Comment
 					err := json.Unmarshal(bytes, &reply)
 					if err != nil {
 						fmt.Println("Failed to decode reply")

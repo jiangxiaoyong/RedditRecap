@@ -3,7 +3,6 @@ module redditRecap
 go 1.20
 
 require (
-	github.com/go-chi/chi/v5 v5.0.11 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
