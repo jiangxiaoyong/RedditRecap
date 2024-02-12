@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,7 +15,7 @@ type RetryConfig struct {
 
 var defaultConfig = &RetryConfig{
 	MaxRetries:   3,
-	WaitDuration: 2 * time.Second,
+	WaitDuration: 3 * time.Second,
 }
 
 func HttpRetry(client *http.Client, req *http.Request) (*http.Response, error) {
@@ -22,11 +23,16 @@ func HttpRetry(client *http.Client, req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 
 	config := defaultConfig
-	for attempt := 0; attempt <= config.MaxRetries; attempt++ {
+	for attempt := 0; attempt < config.MaxRetries; attempt++ {
 		resp, err = client.Do(req)
 
 		if shouldRetry(resp, err) {
-			fmt.Printf("Request error: %v. Http status: %v. Retrying...\n", err, resp.Status)
+			if err != nil {
+				fmt.Printf("Request error: %v", err)
+			} else {
+				fmt.Printf("Http status: %v. Retrying...\n", resp.Status)
+			}
+
 			resp.Body.Close()
 		} else {
 			return resp, err
@@ -37,7 +43,7 @@ func HttpRetry(client *http.Client, req *http.Request) (*http.Response, error) {
 	}
 
 	// Return the last error if all retries failed
-	return nil, err
+	return nil, errors.New(fmt.Sprintf("Retry failed to make %v", req.URL))
 }
 
 func shouldRetry(resp *http.Response, err error) bool {

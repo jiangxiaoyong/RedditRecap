@@ -19,24 +19,36 @@ func main() {
 		fmt.Println("user query:", query)
 
 		searchList, err := reddit.Search(client, query, query, "relevance", "5")
-		if err != nil || searchList == nil || len(searchList) == 0 {
+		if err != nil {
 			fmt.Fprintf(w, "please try again %+v", err.Error())
+			return
+		}
+		if searchList == nil || len(searchList) == 0 {
+			fmt.Fprintf(w, fmt.Sprintf("please try again, empty search result for %v", query))
 			return
 		}
 		topic := searchList[0]
 
 		comments, err := reddit.Comments(client, topic.SubredditNamePrefixed, topic.ID)
-		if err != nil || comments == nil {
+		if err != nil {
 			fmt.Fprintf(w, "please try again %+v", err.Error())
+			return
+		}
+		if comments == nil {
+			fmt.Fprintf(w, "please try again, empty comments")
 			return
 		}
 
 		prompt := llm.Prompt(topic, comments)
 		res := llm.Inquiry(client, prompt)
-		text := llm.ProcessResponse(res)
+		text, err := llm.ProcessResponse(res)
 		fmt.Println("\n\n", text)
 
-		fmt.Fprintf(w, text)
+		if err != nil {
+			fmt.Fprintf(w, fmt.Sprintf("please try again %v", err.Error()))
+		} else {
+			fmt.Fprintf(w, text)
+		}
 	})
 
 	// Start the HTTP server and listen on port 8080

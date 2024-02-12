@@ -3,6 +3,7 @@ package llm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,7 +31,6 @@ func Inquiry(client *http.Client, text string) string {
 		},
 	}
 	reqBody, err := json.Marshal(payload)
-	//fmt.Printf("json = %v\n", string(reqBody))
 
 	req, err := http.NewRequest("POST", geminiEndpoint, bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -52,7 +52,6 @@ func Inquiry(client *http.Client, text string) string {
 		fmt.Println("Response Status NOT OK:", resp.Status)
 		return ""
 	} else {
-		//fmt.Println("Response Body:", string(responseBody))
 		return string(responseBody)
 	}
 }
@@ -71,13 +70,20 @@ type Response struct {
 	Candidates []Candidate `json:"candidates,omitempty"`
 }
 
-func ProcessResponse(responseRaw string) string {
+func ProcessResponse(responseRaw string) (string, error) {
 	var response Response
 	err := json.Unmarshal([]byte(responseRaw), &response)
 	if err != nil {
 		fmt.Println("Error unmarshaling response JSON:", err)
-		return ""
+		return "", err
 	}
 
-	return response.Candidates[0].Content.Parts[0].Text
+	if len(response.Candidates) > 0 &&
+		len(response.Candidates[0].Content.Parts) > 0 &&
+		response.Candidates[0].Content.Parts[0].Text != "" {
+
+		return response.Candidates[0].Content.Parts[0].Text, nil // Text exists
+	} else {
+		return "", errors.New("empty response") // Text does not exist
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"redditRecap/retry"
+	"sort"
 )
 
 type SearchResult struct {
@@ -20,7 +21,7 @@ type SearchResult struct {
 }
 
 func Search(client *http.Client, query, subreddit, sortType, limit string) ([]SearchResult, error) {
-	baseURL := fmt.Sprintf("https://www.reddit.com/r/%s/search.json", subreddit)
+	baseURL := fmt.Sprintf("https://www.reddit.com/search.json")
 	params := url.Values{}
 	params.Add("q", query)
 	params.Add("sort", sortType)
@@ -92,9 +93,9 @@ func Search(client *http.Client, query, subreddit, sortType, limit string) ([]Se
 		searchResults = append(searchResults, searchResult)
 	}
 
-	//sort.Slice(searchResults, func(i, j int) bool {
-	//	return searchResults[i].UPS > searchResults[j].UPS
-	//})
+	sort.Slice(searchResults, func(i, j int) bool {
+		return searchResults[i].UPS > searchResults[j].UPS
+	})
 
 	return searchResults, nil
 }
