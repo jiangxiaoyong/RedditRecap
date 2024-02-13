@@ -2,11 +2,11 @@ package llm
 
 import (
 	"fmt"
-	"redditRecap/reddit"
+	"redditRecap/definition"
 	"strings"
 )
 
-func Prompt(topic reddit.SearchResult, comments []reddit.Comment) string {
+func Prompt(topic definition.SearchResult, comments []definition.Comment) string {
 	context := `
 I will copy past a topic discussion among a group of people.
 The discussion is structured similarly to a Reddit thread, 
@@ -63,10 +63,11 @@ Mike opinion: Mike does not like go and finds it less productive or enjoyable to
 	}
 
 	res := context + topicSection + posts.String()
+	fmt.Println("Prompt creation done")
 	return res
 }
 
-func buildMessage(comment reddit.Comment) string {
+func buildMessage(comment definition.Comment) string {
 	if comment.Author != "" &&
 		comment.Body != "" &&
 		!strings.Contains(strings.ToLower(comment.Author), "delete") &&

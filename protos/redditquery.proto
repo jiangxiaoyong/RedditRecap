@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package redditquery;
+
+// Specify the Go package where the generated code will be placed.
+option go_package = "/codegen";
+
+// Request message for the Search RPC
+message SearchRequest {
+  string query = 1;
+}
+
+// Response message for the Search RPC
+message SearchResponse {
+  SearchResult result = 1;
+}
+
+// Request message for the GetComments RPC
+message CommentRequest {
+  string subreddit_name = 1;
+  string topic_id = 2;
+}
+
+// Response message for the GetComments RPC
+message CommentResponse {
+  repeated Comment comments = 1;
+}
+
+message Comment {
+  string author = 1;
+  string id = 2;
+  string name = 3;
+  string body = 4;
+  string parent_id = 5;
+  repeated Comment reply_list = 6; // Nested comments
+}
+
+// Message equivalent to the SearchResult Go struct
+message SearchResult {
+  string title = 1;
+  string id = 2;
+  string name = 3;
+  string author = 4;
+  string self_text = 5;
+  string subreddit_name_prefixed = 6;
+  int32 ups = 7;
+}
+
+// Service definition with Search and Comments RPCs
+service MyService {
+  // Search function returning a SearchResult
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+
+  // Comments function returning a slice/list of Comments
+  rpc GetComments(CommentRequest) returns (CommentResponse) {}
+}

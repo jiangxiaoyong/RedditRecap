@@ -16,9 +16,11 @@ const (
 	apiEndpoint = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
 )
 
-func Inquiry(client *http.Client, text string) string {
+var client = &http.Client{}
+
+func Inquiry(text string) string {
 	geminiEndpoint := apiEndpoint + "?key=" + os.Getenv("BARD_API_KEY")
-	fmt.Printf("gemini endpoint = %v\n", geminiEndpoint)
+	fmt.Printf("Post to LLM gemini endpoint = %v\n", geminiEndpoint)
 
 	payload := definition.Payload{
 		// {"contents":[{"parts":[{"text": "hello"}]}]}
@@ -36,7 +38,7 @@ func Inquiry(client *http.Client, text string) string {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := retry.HttpRetry(client, req)
 	if err != nil {
-		fmt.Println("Error making HTTP POST request:", err)
+		fmt.Println("Error inquiry llm:", err)
 		return ""
 	}
 	defer resp.Body.Close()
@@ -44,12 +46,12 @@ func Inquiry(client *http.Client, text string) string {
 	// Reading the response body
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading response body:", err)
+		fmt.Println("Error reading llm response body:", err)
 		return ""
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Response Status NOT OK:", resp.Status)
+		fmt.Println("Response Status NOT OK from llm:", resp.Status)
 		return ""
 	} else {
 		return string(responseBody)
@@ -59,7 +61,6 @@ func Inquiry(client *http.Client, text string) string {
 type Text struct {
 	Text string `json:"text,omitempty"`
 }
-
 type Content struct {
 	Parts []Text `json:"parts,omitempty"`
 }
@@ -74,7 +75,7 @@ func ProcessResponse(responseRaw string) (string, error) {
 	var response Response
 	err := json.Unmarshal([]byte(responseRaw), &response)
 	if err != nil {
-		fmt.Println("Error unmarshaling response JSON:", err)
+		fmt.Println("Error unmarshaling llm response JSON:", err)
 		return "", err
 	}
 
@@ -84,6 +85,6 @@ func ProcessResponse(responseRaw string) (string, error) {
 
 		return response.Candidates[0].Content.Parts[0].Text, nil // Text exists
 	} else {
-		return "", errors.New("empty response") // Text does not exist
+		return "", errors.New("empty llm response") // Text does not exist
 	}
 }
