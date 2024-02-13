@@ -22,7 +22,7 @@ func (s *myServiceServer) Search(ctx context.Context, req *redditquery.SearchReq
 	query := req.GetQuery()
 	fmt.Printf("Search Request Received: %s\n", req.Query)
 
-	searchList, err := Search(client, query, query, "relevance", "5")
+	searchList, err := Search(client, query, "relevance", "5")
 	if err != nil {
 		return &redditquery.SearchResponse{Result: nil}, err
 	}

@@ -11,7 +11,7 @@ import (
 	"sort"
 )
 
-func Search(client *http.Client, query, subreddit, sortType, limit string) ([]definition.SearchResult, error) {
+func Search(client *http.Client, query, sortType, limit string) ([]definition.SearchResult, error) {
 	baseURL := fmt.Sprintf("https://www.reddit.com/search.json")
 	params := url.Values{}
 	params.Add("q", query)

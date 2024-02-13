@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 	"redditRecap/definition"
@@ -27,19 +28,19 @@ func convertProtoCommentsToGo(pbComments []*redditquery.Comment) []definition.Co
 	return comments
 }
 
-// ConvertProtoToSearchResultGo converts a protobuf SearchResult message to its Go struct equivalent.
-func ConvertProtoToSearchResultGo(protoSR *redditquery.SearchResponse) *definition.SearchResult {
+// convertProtoSearchResultToGo converts a protobuf SearchResult message to its Go struct equivalent.
+func convertProtoSearchResultToGo(protoSR *redditquery.SearchResult) *definition.SearchResult {
 	if protoSR == nil {
 		return nil
 	}
 	return &definition.SearchResult{
-		Title:                 protoSR.Result.GetTitle(),
-		ID:                    protoSR.Result.GetId(),
-		Name:                  protoSR.Result.GetName(),
-		Author:                protoSR.Result.GetAuthor(),
-		SelfText:              protoSR.Result.GetSelfText(),
-		SubredditNamePrefixed: protoSR.Result.GetSubredditNamePrefixed(),
-		UPS:                   int(protoSR.Result.GetUps()), // Note: Convert int32 to int as required by the Go struct
+		Title:                 protoSR.GetTitle(),
+		ID:                    protoSR.GetId(),
+		Name:                  protoSR.GetName(),
+		Author:                protoSR.GetAuthor(),
+		SelfText:              protoSR.GetSelfText(),
+		SubredditNamePrefixed: protoSR.GetSubredditNamePrefixed(),
+		UPS:                   int(protoSR.GetUps()), // Note: Convert int32 to int as required by the Go struct
 	}
 }
 
@@ -47,7 +48,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 
 	// Establish a connection to the server.
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Could not connect: %v", err)
 	}
@@ -55,12 +56,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	client := redditquery.NewMyServiceClient(conn)
 
 	// Perform a search request
-	searchProto, err := client.Search(context.Background(), &redditquery.SearchRequest{Query: query})
+	searchResProto, err := client.Search(context.Background(), &redditquery.SearchRequest{Query: query})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	searchResGo := ConvertProtoToSearchResultGo(searchProto)
+	searchResGo := convertProtoSearchResultToGo(searchResProto.Result)
 	fmt.Printf("Search Result: %v\n", searchResGo)
 
 	// Perform a request to get commentsGO
