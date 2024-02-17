@@ -19,7 +19,7 @@ const (
 var client = &http.Client{}
 
 func Inquiry(text string) string {
-	geminiEndpoint := apiEndpoint + "?key=" + os.Getenv("BARD_API_KEY")
+	geminiEndpoint := apiEndpoint + "?key=" + os.Getenv("GEMINI_API_KEY")
 	fmt.Printf("Post to LLM gemini endpoint = %v\n", geminiEndpoint)
 
 	payload := definition.Payload{
